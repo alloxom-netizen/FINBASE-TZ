@@ -6,6 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
   User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -16,6 +18,7 @@ interface AuthStore {
   error: string | null;
   init: () => () => void;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
@@ -37,6 +40,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ error: null });
     try {
       await signInWithEmailAndPassword(auth, email, password);
+    } catch {
+      set({ error: "invalidCredentials" });
+      throw new Error("invalidCredentials");
+    }
+  },
+
+  signInWithGoogle: async () => {
+    set({ error: null });
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
     } catch {
       set({ error: "invalidCredentials" });
       throw new Error("invalidCredentials");
