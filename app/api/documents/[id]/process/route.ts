@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb, adminStorage } from "@/lib/firebase/admin";
+import { adminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { getClaudeClient } from "@/lib/claude/client";
 import {
   EXTRACTION_SYSTEM_PROMPT,
@@ -26,7 +26,7 @@ export async function POST(
     const language = (docData.language as Locale) ?? "en";
 
     // Download file from Storage
-    const bucket = adminStorage.bucket();
+    const bucket = getAdminBucket();
     const fileRef = bucket.file(docData.storagePath);
     const [fileBuffer] = await fileRef.download();
     const base64Data = fileBuffer.toString("base64");
@@ -106,6 +106,7 @@ export async function POST(
       .doc(documentId)
       .update({ status: "failed" })
       .catch(() => {});
-    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

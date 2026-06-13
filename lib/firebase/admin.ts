@@ -25,13 +25,18 @@ function getAdminApp(): App {
 }
 
 export function getAdminDb(): Firestore {
-  if (!_db) _db = getFirestore(getAdminApp());
+  if (!_db) _db = getFirestore(getAdminApp(), "finbase");
   return _db;
 }
 
 export function getAdminStorage(): Storage {
   if (!_storage) _storage = getStorage(getAdminApp());
   return _storage;
+}
+
+export function getAdminBucket() {
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!;
+  return getAdminStorage().bucket(bucketName);
 }
 
 // Convenience named exports for use in route handlers

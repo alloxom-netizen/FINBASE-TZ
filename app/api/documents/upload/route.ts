@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb, adminStorage } from "@/lib/firebase/admin";
+import { adminDb, getAdminBucket } from "@/lib/firebase/admin";
 import { v4 as uuidv4 } from "uuid";
 
 const ALLOWED_TYPES: Record<string, string> = {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const bucket = adminStorage.bucket();
+    const bucket = getAdminBucket();
     const fileRef = bucket.file(storagePath);
     await fileRef.save(buffer, { contentType: file.type });
 
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ documentId, storagePath });
   } catch (err) {
     console.error("Upload error:", err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
