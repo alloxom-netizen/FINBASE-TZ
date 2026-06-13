@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "home": "Nyumbani",
+    "dashboard": "Dashibodi",
+    "assistant": "Msaidizi",
+    "auditing": "Ukaguzi",
+    "login": "Ingia",
+    "register": "Jisajili",
+    "logout": "Toka"
+  },
+  "home": {
+    "title": "FinBase",
+    "tagline": "Akili ya fedha kwa Afrika Mashariki",
+    "uploadPrompt": "Pakia hati ya fedha ili kuanza",
+    "getStarted": "Anza sasa — akaunti haihitajiki",
+    "loginForMore": "Ingia kwa upatikanaji kamili"
+  },
+  "upload": {
+    "title": "Pakia Hati",
+    "dragDrop": "Buruta faili yako hapa",
+    "orBrowse": "au vinjari kupakia",
+    "supported": "PDF, JPG, PNG, WEBP — hadi MB 10",
+    "uploading": "Inapakia…",
+    "processing": "Inashughulikiwa na AI…",
+    "success": "Hati imeshughulikiwa",
+    "error": "Upakiaji umeshindwa"
+  },
+  "document": {
+    "status": {
+      "processing": "Inashughulikiwa",
+      "processed": "Imeshughulikiwa",
+      "needs_review": "Inahitaji Ukaguzi",
+      "failed": "Imeshindwa"
+    },
+    "confidence": {
+      "high": "Uhakika wa juu",
+      "medium": "Uhakika wa kati",
+      "low": "Uhakika wa chini"
+    },
+    "unreadable": "Haiwezi kusomwa",
+    "corrected": "Imesahihishwa",
+    "original": "Asili",
+    "saveCorrection": "Hifadhi",
+    "cancelCorrection": "Ghairi"
+  },
+  "dashboard": {
+    "title": "Dashibodi",
+    "recentDocuments": "Hati za Hivi Karibuni",
+    "noDocuments": "Hakuna hati bado",
+    "uploadFirst": "Pakia hati yako ya kwanza kuiona hapa"
+  },
+  "assistant": {
+    "title": "Msaidizi wa AI",
+    "tools": {
+      "drafts": "Andika Barua",
+      "accounting": "Muhtasari wa Uhasibu",
+      "qa": "Uliza Swali",
+      "negotiation": "Mwongozo wa Mazungumzo",
+      "summary": "Muhtasari wa Hati"
+    },
+    "placeholder": "Chagua hati na chombo",
+    "generate": "Tengeneza",
+    "generating": "Inatengeneza…",
+    "download": "Pakua Excel",
+    "requiresLogin": "Ingia kwanza kutumia chombo hiki"
+  },
+  "auditing": {
+    "title": "Ukaguzi wa Hati",
+    "runAudit": "Fanya Ukaguzi",
+    "running": "Inakagua…",
+    "noIssues": "Hakuna matatizo yaliyopatikana",
+    "issuesFound": "Matatizo {count} yamepatikana",
+    "requiresLogin": "Ingia kwanza kwa ukaguzi"
+  },
+  "auth": {
+    "email": "Barua pepe",
+    "password": "Neno la siri",
+    "login": "Ingia",
+    "register": "Fungua akaunti",
+    "loginTitle": "Karibu tena",
+    "registerTitle": "Fungua akaunti yako",
+    "noAccount": "Huna akaunti?",
+    "hasAccount": "Una akaunti tayari?",
+    "signUp": "Jisajili",
+    "signIn": "Ingia",
+    "error": {
+      "invalidCredentials": "Barua pepe au neno la siri si sahihi",
+      "emailInUse": "Barua pepe tayari inatumika",
+      "weakPassword": "Neno la siri liwe na herufi 8 au zaidi"
+    }
+  },
+  "common": {
+    "loading": "Inapakia…",
+    "error": "Kuna tatizo",
+    "retry": "Jaribu tena",
+    "back": "Rudi",
+    "close": "Funga",
+    "currency": "TZS"
+  }
+}

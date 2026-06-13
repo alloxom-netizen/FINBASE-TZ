@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "assistant": "Assistant",
+    "auditing": "Auditing",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "home": {
+    "title": "FinBase",
+    "tagline": "Financial intelligence for East Africa",
+    "uploadPrompt": "Upload a financial document to get started",
+    "getStarted": "Get started — no account needed",
+    "loginForMore": "Log in for full access"
+  },
+  "upload": {
+    "title": "Upload Document",
+    "dragDrop": "Drag & drop your file here",
+    "orBrowse": "or browse to upload",
+    "supported": "PDF, JPG, PNG, WEBP — up to 10 MB",
+    "uploading": "Uploading…",
+    "processing": "Processing with AI…",
+    "success": "Document processed",
+    "error": "Upload failed"
+  },
+  "document": {
+    "status": {
+      "processing": "Processing",
+      "processed": "Processed",
+      "needs_review": "Needs Review",
+      "failed": "Failed"
+    },
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "unreadable": "Unreadable",
+    "corrected": "Corrected",
+    "original": "Original",
+    "saveCorrection": "Save",
+    "cancelCorrection": "Cancel"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "recentDocuments": "Recent Documents",
+    "noDocuments": "No documents yet",
+    "uploadFirst": "Upload your first document to see it here"
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "tools": {
+      "drafts": "Draft Letter",
+      "accounting": "Accounting Summary",
+      "qa": "Ask a Question",
+      "negotiation": "Negotiation Guide",
+      "summary": "Document Summary"
+    },
+    "placeholder": "Select a document and choose a tool",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "download": "Download Excel",
+    "requiresLogin": "Login required for this tool"
+  },
+  "auditing": {
+    "title": "Document Audit",
+    "runAudit": "Run Audit",
+    "running": "Auditing…",
+    "noIssues": "No issues found",
+    "issuesFound": "{count} issue(s) found",
+    "requiresLogin": "Login required for auditing"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Log in",
+    "register": "Create account",
+    "loginTitle": "Welcome back",
+    "registerTitle": "Create your account",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUp": "Sign up",
+    "signIn": "Sign in",
+    "error": {
+      "invalidCredentials": "Invalid email or password",
+      "emailInUse": "Email already in use",
+      "weakPassword": "Password must be at least 8 characters"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "back": "Back",
+    "close": "Close",
+    "currency": "TZS"
+  }
+}
