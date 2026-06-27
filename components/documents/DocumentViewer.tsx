@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { FinDocument } from "@/types";
-import { FieldRow } from "./FieldEditor";
 import { Spinner } from "@/components/ui/Spinner";
 import { useLocale } from "next-intl";
 
@@ -68,15 +67,6 @@ export function DocumentViewer({ documentId }: Props) {
     });
     return unsub;
   }, [documentId]);
-
-  async function handleCorrect(fieldName: string, value: string) {
-    await updateDoc(doc(db, "documents", documentId), {
-      [`userCorrections.${fieldName}`]: value,
-      [`extractedData.fields`]: (document?.extractedData?.fields ?? []).map((f) =>
-        f.name === fieldName ? { ...f, correctedValue: value } : f
-      ),
-    });
-  }
 
   if (loading) {
     return (
@@ -154,26 +144,80 @@ export function DocumentViewer({ documentId }: Props) {
             </div>
           )}
 
-          {/* Editable fields */}
-          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-            <div className="flex items-center justify-between mb-4">
+          {/* Usage guide */}
+          <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/[0.05] bg-white/[0.02]">
               <p className="text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                {locale === "sw" ? "Sehemu Zilizotolewa" : "Extracted Fields"}
+                {locale === "sw" ? "Unaweza kufanya nini na hati hii" : "What you can do with this document"}
               </p>
-              <p className="text-xs text-neutral-700">
-                {locale === "sw" ? "Bonyeza kwenye thamani kuhariri" : "Click any value to correct it"}
+              <p className="text-xs text-neutral-700 mt-0.5">
+                {locale === "sw"
+                  ? "Nenda kwenye ukurasa wa Msaidizi, weka ID ya hati hapo juu, kisha chagua hali."
+                  : "Go to the Assistant page, paste the document ID above, then pick a mode."}
               </p>
             </div>
-            <div>
-              {(extractedData.fields ?? []).map((field) => (
-                <FieldRow
-                  key={field.name}
-                  field={field}
-                  onCorrect={handleCorrect}
-                />
-              ))}
-            </div>
+
+            {[
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                ),
+                mode: locale === "sw" ? "Mazungumzo" : "Chat",
+                desc: locale === "sw"
+                  ? "Uliza maswali yoyote kuhusu hati hii kwa lugha ya kawaida."
+                  : "Ask any question about this document in plain language.",
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                ),
+                mode: locale === "sw" ? "Muhtasari" : "Summary",
+                desc: locale === "sw"
+                  ? "Pata muhtasari wa kina na mambo muhimu yaliyogunduliwa."
+                  : "Get a detailed breakdown and key figures highlighted.",
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                ),
+                mode: "Q&A",
+                desc: locale === "sw"
+                  ? "Uliza maswali maalum kuhusu takwimu, tarehe, au masharti."
+                  : "Query specific figures, dates, or terms with precise answers.",
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                ),
+                mode: locale === "sw" ? "Rasimu" : "Draft",
+                desc: locale === "sw"
+                  ? "Tengeneza barua, ripoti, au majibu kulingana na hati hii."
+                  : "Generate response letters, reports, or follow-up emails.",
+              },
+              {
+                icon: (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                ),
+                mode: locale === "sw" ? "Mazungumzo ya Bei" : "Negotiate",
+                desc: locale === "sw"
+                  ? "Pata ushauri wa mazungumzo ya bei au masharti ya mkataba."
+                  : "Get advice on pricing negotiation or contract terms.",
+              },
+            ].map(({ icon, mode, desc }) => (
+              <div key={mode} className="flex items-start gap-3 px-4 py-3 border-b border-white/[0.04] last:border-0">
+                <div className="h-7 w-7 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="h-3.5 w-3.5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} suppressHydrationWarning>
+                    {icon}
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-neutral-400">{mode}</p>
+                  <p className="text-xs text-neutral-600 leading-relaxed mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
+
         </>
       )}
 

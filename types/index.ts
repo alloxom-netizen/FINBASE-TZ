@@ -25,10 +25,18 @@ export interface ExtractedField {
   confidence: Confidence;
   sourceNote: string;
   isUnreadable: boolean;
+  isTotal?: boolean;
+}
+
+export interface ExtractedSection {
+  title: string;
+  titleSw: string;
+  fields: ExtractedField[];
 }
 
 export interface ExtractedData {
   documentType: DocumentType;
+  sections?: ExtractedSection[];
   fields: ExtractedField[];
   overallConfidence: Confidence;
   summary: string;
