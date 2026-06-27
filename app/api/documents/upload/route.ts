@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, getAdminBucket } from "@/lib/firebase/admin";
-import { v4 as uuidv4 } from "uuid";
+
+// Short human-readable ID — avoids ambiguous chars (0/O, 1/I)
+function generateDocId(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let id = "";
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) id += "-";
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id; // e.g. "AB3K-P9MN"
+}
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
@@ -38,7 +48,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const documentId = uuidv4();
+    // Optional pre-extracted data from the preview step
+    const extractedDataRaw = formData.get("extractedData") as string | null;
+    const extractedData = extractedDataRaw ? JSON.parse(extractedDataRaw) : null;
+
+    const documentId = generateDocId();
     const storagePath = `documents/${userId ?? sessionId ?? "anon"}/${documentId}.${fileType}`;
 
     const arrayBuffer = await file.arrayBuffer();
@@ -56,10 +70,11 @@ export async function POST(req: NextRequest) {
       fileType,
       fileSize: file.size,
       storagePath,
-      status: "processing",
+      // If pre-extracted data is provided, mark as processed immediately
+      status: extractedData ? "processed" : "processing",
       uploadedAt: new Date(),
-      processedAt: null,
-      extractedData: null,
+      processedAt: extractedData ? new Date() : null,
+      extractedData: extractedData ?? null,
       userCorrections: {},
       language,
     });

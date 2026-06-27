@@ -1,9 +1,9 @@
 import { Confidence } from "@/types";
 
 const styles: Record<Confidence, string> = {
-  high: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  medium: "bg-amber-50 text-amber-700 border border-amber-200",
-  low: "bg-red-50 text-red-700 border border-red-200",
+  high: "bg-teal-500/10 text-teal-400 border border-teal-500/20",
+  medium: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+  low: "bg-red-500/10 text-red-400 border border-red-500/20",
 };
 
 const labels: Record<Confidence, { en: string; sw: string }> = {
@@ -19,7 +19,7 @@ interface Props {
 
 export function ConfidenceBadge({ confidence, locale = "en" }: Props) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[confidence]}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${styles[confidence]}`}>
       {labels[confidence][locale]}
     </span>
   );

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, getAdminBucket } from "@/lib/firebase/admin";
-import { getClaudeClient } from "@/lib/claude/client";
+import { getGroqClient, GROQ_TEXT_MODEL, GROQ_VISION_MODEL } from "@/lib/groq/client";
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionPrompt,
-  EXTRACTION_SCHEMA,
 } from "@/lib/claude/prompts/extract";
 import { Locale } from "@/types";
 
@@ -24,64 +23,68 @@ export async function POST(
 
     const docData = docSnap.data()!;
     const language = (docData.language as Locale) ?? "en";
+    const isImage = docData.fileType !== "pdf";
 
-    // Download file from Storage
     const bucket = getAdminBucket();
     const fileRef = bucket.file(docData.storagePath);
     const [fileBuffer] = await fileRef.download();
-    const base64Data = fileBuffer.toString("base64");
 
-    const mediaTypeMap: Record<string, string> = {
-      pdf: "application/pdf",
-      jpg: "image/jpeg",
-      png: "image/png",
-      webp: "image/webp",
-    };
-    const mediaType = mediaTypeMap[docData.fileType] ?? "application/pdf";
+    const client = getGroqClient();
+    const extractionPrompt = buildExtractionPrompt(language);
+    const systemContent = `${EXTRACTION_SYSTEM_PROMPT}\n\n${extractionPrompt}`;
 
-    const client = getClaudeClient();
+    let rawText = "";
 
-    const isImage = docData.fileType !== "pdf";
+    if (isImage) {
+      // Use vision model for images
+      const mediaTypeMap: Record<string, string> = {
+        jpg: "image/jpeg",
+        png: "image/png",
+        webp: "image/webp",
+      };
+      const mimeType = mediaTypeMap[docData.fileType] ?? "image/jpeg";
+      const base64Data = fileBuffer.toString("base64");
 
-    const contentBlock = isImage
-      ? {
-          type: "image" as const,
-          source: {
-            type: "base64" as const,
-            media_type: mediaType as "image/jpeg" | "image/png" | "image/webp",
-            data: base64Data,
+      const completion = await client.chat.completions.create({
+        model: GROQ_VISION_MODEL,
+        max_tokens: 4096,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64Data}` },
+              },
+              { type: "text", text: systemContent },
+            ],
           },
-        }
-      : {
-          type: "document" as const,
-          source: {
-            type: "base64" as const,
-            media_type: "application/pdf" as const,
-            data: base64Data,
+        ],
+      });
+      rawText = completion.choices[0].message.content ?? "";
+    } else {
+      // Extract text from PDF using pdf-parse, then analyse with text model
+      const pdfParseModule = await import("pdf-parse");
+      const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default ?? pdfParseModule;
+      const pdfData = await pdfParse(fileBuffer);
+      const pdfText = pdfData.text.slice(0, 12000); // cap tokens
+
+      const completion = await client.chat.completions.create({
+        model: GROQ_TEXT_MODEL,
+        max_tokens: 4096,
+        messages: [
+          { role: "system", content: systemContent },
+          {
+            role: "user",
+            content: `Here is the extracted text from the PDF document:\n\n${pdfText}`,
           },
-        };
-
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      system: EXTRACTION_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            contentBlock,
-            { type: "text", text: buildExtractionPrompt(language) },
-          ],
-        },
-      ],
-    });
-
-    const rawText =
-      message.content[0].type === "text" ? message.content[0].text : "";
+        ],
+      });
+      rawText = completion.choices[0].message.content ?? "";
+    }
 
     let extractedData;
     try {
-      // Strip any markdown code fences if present
       const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       extractedData = JSON.parse(cleaned);
     } catch {

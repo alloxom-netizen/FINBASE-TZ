@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -10,6 +10,35 @@ import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { DocumentUpload } from "@/components/upload/DocumentUpload";
 import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [text]);
+  return (
+    <button
+      onClick={copy}
+      title="Copy ID"
+      className="ml-auto shrink-0 text-neutral-700 hover:text-teal-400 transition-colors"
+    >
+      {copied ? (
+        <svg className="h-3 w-3 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 const statusColor: Record<string, string> = {
   processing: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
@@ -92,10 +121,10 @@ export default function DashboardPage() {
             <p className="text-xs text-neutral-600 text-center py-8">{t("dashboard.noDocuments")}</p>
           ) : (
             documents.map((d) => (
-              <button
+              <div
                 key={d.id}
                 onClick={() => setSelectedId(d.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
                   selectedId === d.id
                     ? "border-teal-500/30 bg-teal-500/10"
                     : "border-transparent hover:bg-white/5 hover:border-white/[0.06]"
@@ -114,7 +143,11 @@ export default function DashboardPage() {
                       : ""}
                   </span>
                 </div>
-              </button>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <span className="text-xs font-mono text-neutral-600">{d.id}</span>
+                  <CopyButton text={d.id} />
+                </div>
+              </div>
             ))
           )}
         </div>

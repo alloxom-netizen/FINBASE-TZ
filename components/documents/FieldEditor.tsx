@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExtractedField } from "@/types";
 import { ConfidenceBadge } from "@/components/ui/ConfidenceBadge";
-import { Button } from "@/components/ui/Button";
 import { useLocale } from "next-intl";
 
 interface Props {
@@ -13,78 +12,68 @@ interface Props {
 
 export function FieldRow({ field, onCorrect }: Props) {
   const locale = useLocale() as "en" | "sw";
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(field.correctedValue ?? field.value ?? ""));
+  const canonical = String(field.correctedValue ?? field.value ?? "");
+  const [value, setValue] = useState(canonical);
+  const [saved, setSaved] = useState(false);
 
-  const displayValue = field.correctedValue ?? field.value;
+  // Keep in sync if parent data changes (e.g. real-time snapshot)
+  useEffect(() => {
+    setValue(String(field.correctedValue ?? field.value ?? ""));
+  }, [field.correctedValue, field.value]);
+
   const label = locale === "sw" ? field.labelSw : field.label;
 
+  function save() {
+    const trimmed = value.trim();
+    const original = String(field.correctedValue ?? field.value ?? "");
+    if (trimmed === original) return;
+    onCorrect(field.name, trimmed);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+    if (e.key === "Escape") {
+      setValue(canonical);
+      e.currentTarget.blur();
+    }
+  }
+
   return (
-    <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-50 last:border-0">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-700">{label}</span>
-          <ConfidenceBadge confidence={field.confidence} locale={locale} />
-          {field.isUnreadable && (
-            <span className="text-xs text-slate-400 italic">
-              {locale === "sw" ? "Haiwezi kusomwa" : "Unreadable"}
-            </span>
-          )}
-          {field.correctedValue !== undefined && (
-            <span className="text-xs text-blue-600">
-              {locale === "sw" ? "Imesahihishwa" : "Corrected"}
-            </span>
-          )}
-        </div>
-        {editing ? (
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              autoFocus
-            />
-            <Button
-              size="sm"
-              onClick={() => {
-                onCorrect(field.name, draft);
-                setEditing(false);
-              }}
-            >
-              {locale === "sw" ? "Hifadhi" : "Save"}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setEditing(false)}
-            >
-              {locale === "sw" ? "Ghairi" : "Cancel"}
-            </Button>
-          </div>
-        ) : (
-          <p className="mt-0.5 text-sm text-slate-500 truncate">
-            {displayValue !== null && displayValue !== undefined
-              ? String(displayValue)
-              : <span className="italic text-slate-400">—</span>
-            }
-          </p>
+    <div className="group py-3 border-b border-white/[0.04] last:border-0">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-xs text-neutral-500 font-medium">{label}</span>
+        <ConfidenceBadge confidence={field.confidence} locale={locale} />
+        {field.isUnreadable && (
+          <span className="text-xs text-neutral-700 italic">
+            {locale === "sw" ? "Haiwezi kusomwa" : "unreadable"}
+          </span>
         )}
-        {field.sourceNote && !editing && (
-          <p className="mt-0.5 text-xs text-slate-400">{field.sourceNote}</p>
+        {field.correctedValue !== undefined && !saved && (
+          <span className="text-xs text-teal-500">
+            {locale === "sw" ? "✓ Imesahihishwa" : "✓ corrected"}
+          </span>
+        )}
+        {saved && (
+          <span className="text-xs text-teal-400 animate-pulse">
+            {locale === "sw" ? "Imehifadhiwa ✓" : "Saved ✓"}
+          </span>
         )}
       </div>
-      {!editing && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="shrink-0 text-xs"
-          onClick={() => {
-            setDraft(String(field.correctedValue ?? field.value ?? ""));
-            setEditing(true);
-          }}
-        >
-          {locale === "sw" ? "Hariri" : "Edit"}
-        </Button>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={handleKey}
+        placeholder={locale === "sw" ? "Andika thamani…" : "Type value…"}
+        className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-neutral-200 placeholder-neutral-700 focus:outline-none focus:border-teal-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-teal-500/20 transition-colors"
+      />
+      {field.sourceNote && (
+        <p className="mt-1 text-xs text-neutral-700">{field.sourceNote}</p>
       )}
     </div>
   );
