@@ -20,9 +20,8 @@ interface ModeConfig {
   key: Mode;
   label: string;
   labelSw: string;
-  icon: string;
   needsDoc: boolean;
-  docRequired: boolean;
+  needsAuth: boolean;
   placeholder: string;
   placeholderSw: string;
   autoPrompt?: string;
@@ -34,9 +33,8 @@ const MODES: ModeConfig[] = [
     key: "chat",
     label: "Chat",
     labelSw: "Mazungumzo",
-    icon: "💬",
     needsDoc: false,
-    docRequired: false,
+    needsAuth: false,
     placeholder: "Ask anything about finance…",
     placeholderSw: "Uliza chochote kuhusu fedha…",
   },
@@ -44,9 +42,8 @@ const MODES: ModeConfig[] = [
     key: "summary",
     label: "Summary",
     labelSw: "Muhtasari",
-    icon: "📋",
     needsDoc: true,
-    docRequired: true,
+    needsAuth: false,
     placeholder: "Ask for more details about the summary…",
     placeholderSw: "Uliza maelezo zaidi kuhusu muhtasari…",
     autoPrompt: "Please provide a concise structured summary of this document.",
@@ -56,9 +53,8 @@ const MODES: ModeConfig[] = [
     key: "qa",
     label: "Q&A",
     labelSw: "Maswali",
-    icon: "❓",
     needsDoc: true,
-    docRequired: true,
+    needsAuth: false,
     placeholder: "Ask a question about this document…",
     placeholderSw: "Uliza swali kuhusu hati hii…",
   },
@@ -66,47 +62,38 @@ const MODES: ModeConfig[] = [
     key: "drafts",
     label: "Draft",
     labelSw: "Andika Barua",
-    icon: "✉️",
     needsDoc: false,
-    docRequired: false,
-    placeholder: "Describe what you'd like drafted (e.g. payment request, dispute letter)…",
-    placeholderSw: "Elezea barua unayohitaji (k.m. ombi la malipo, barua ya pingamizi)…",
+    needsAuth: true,
+    placeholder: "Describe what you'd like drafted…",
+    placeholderSw: "Elezea barua unayohitaji…",
   },
   {
     key: "negotiation",
     label: "Negotiate",
     labelSw: "Mazungumzo ya Biashara",
-    icon: "🤝",
     needsDoc: false,
-    docRequired: false,
+    needsAuth: true,
     placeholder: "Describe the deal or contract you're negotiating…",
-    placeholderSw: "Elezea mkataba au makubaliano unayozungumzia…",
+    placeholderSw: "Elezea mkataba unaoujadili…",
   },
   {
     key: "accounting",
     label: "Excel",
     labelSw: "Excel",
-    icon: "📊",
     needsDoc: true,
-    docRequired: true,
+    needsAuth: true,
     placeholder: "",
     placeholderSw: "",
   },
 ];
 
-const AUTH_REQUIRED: Mode[] = ["drafts", "negotiation", "accounting"];
-
 const SUGGESTIONS = {
   en: [
     "What is a cash flow statement?",
-    "Explain the difference between profit and cash flow",
-    "How do I calculate VAT in Tanzania?",
     "What should I check in an invoice before paying?",
   ],
   sw: [
     "Taarifa ya mtiririko wa pesa ni nini?",
-    "Eleza tofauti kati ya faida na mtiririko wa pesa",
-    "Jinsi ya kukokotoa VAT Tanzania?",
     "Niangalie nini kwenye ankara kabla ya kulipa?",
   ],
 };
@@ -145,7 +132,6 @@ function ThinkingSection({ thinking, isStreaming }: { thinking: string; isStream
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-2 px-3 py-2 text-neutral-500 hover:text-neutral-300 transition-colors text-left"
       >
-        <span className="text-base">{isStreaming ? "🧠" : "💭"}</span>
         <span className="font-medium">{isStreaming ? "Thinking…" : "Reasoning"}</span>
         {isStreaming && <Spinner size="sm" />}
         <svg
@@ -159,9 +145,7 @@ function ThinkingSection({ thinking, isStreaming }: { thinking: string; isStream
         <div className="px-3 pb-3 pt-1 border-t border-white/[0.04] max-h-52 overflow-y-auto">
           <p className="text-neutral-600 font-mono whitespace-pre-wrap leading-relaxed">
             {thinking}
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-3 bg-neutral-700 animate-pulse ml-0.5 align-middle" />
-            )}
+            {isStreaming && <span className="inline-block w-1.5 h-3 bg-neutral-700 animate-pulse ml-0.5 align-middle" />}
           </p>
         </div>
       )}
@@ -171,20 +155,15 @@ function ThinkingSection({ thinking, isStreaming }: { thinking: string; isStream
 
 function AssistantMessage({ msg }: { msg: Message }) {
   const showThinking = !!(msg.thinking || (msg.isStreaming && !msg.content && !msg.thinking));
-
   return (
-    <div className="flex gap-3 flex-row">
+    <div className="flex gap-3">
       <BotAvatar />
       <div className="max-w-[80%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed bg-white/[0.06] text-neutral-300">
-        {showThinking && (
-          <ThinkingSection thinking={msg.thinking ?? ""} isStreaming={msg.isStreaming ?? false} />
-        )}
+        {showThinking && <ThinkingSection thinking={msg.thinking ?? ""} isStreaming={msg.isStreaming ?? false} />}
         {msg.content ? (
           <p className="whitespace-pre-wrap">
             {msg.content}
-            {msg.isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-neutral-400 animate-pulse ml-0.5 align-middle" />
-            )}
+            {msg.isStreaming && <span className="inline-block w-1.5 h-4 bg-neutral-400 animate-pulse ml-0.5 align-middle" />}
           </p>
         ) : msg.isStreaming && !msg.thinking ? (
           <div className="flex items-center gap-2 text-neutral-500">
@@ -199,6 +178,7 @@ function AssistantMessage({ msg }: { msg: Message }) {
 
 export default function AssistantPage() {
   const locale = useLocale() as "en" | "sw";
+  const sw = locale === "sw";
   const { user } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>("chat");
@@ -213,11 +193,14 @@ export default function AssistantPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const messages = messagesByMode[mode];
   const modeConfig = MODES.find((m) => m.key === mode)!;
-  const requiresAuth = AUTH_REQUIRED.includes(mode) && !user;
-  const missingDoc = modeConfig.docRequired && !documentId.trim();
+  const requiresAuth = modeConfig.needsAuth && !user;
+  const missingDoc = modeConfig.needsDoc && !documentId.trim();
+  const canSend = !loading && !requiresAuth && !missingDoc && input.trim();
+  const isEmptyChat = messages.length === 0;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -227,7 +210,7 @@ export default function AssistantPage() {
     setMode(next);
     setInput("");
     setExcelResult(null);
-    inputRef.current?.focus();
+    setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   async function send(text?: string) {
@@ -263,9 +246,7 @@ export default function AssistantPage() {
         setMessagesByMode((prev) => ({
           ...prev,
           [mode]: prev[mode].map((m) =>
-            m.id === streamingId
-              ? { ...m, content: err.error ?? "Something went wrong.", isStreaming: false }
-              : m
+            m.id === streamingId ? { ...m, content: err.error ?? "Something went wrong.", isStreaming: false } : m
           ),
         }));
         return;
@@ -280,7 +261,6 @@ export default function AssistantPage() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         lineBuf += decoder.decode(value, { stream: true });
         const lines = lineBuf.split("\n");
         lineBuf = lines.pop() ?? "";
@@ -289,56 +269,41 @@ export default function AssistantPage() {
           if (!line.startsWith("data: ")) continue;
           const raw = line.slice(6).trim();
           if (!raw) continue;
-
           try {
             const parsed = JSON.parse(raw);
             if (parsed.done) {
               setMessagesByMode((prev) => ({
                 ...prev,
-                [mode]: prev[mode].map((m) =>
-                  m.id === streamingId ? { ...m, isStreaming: false } : m
-                ),
+                [mode]: prev[mode].map((m) => m.id === streamingId ? { ...m, isStreaming: false } : m),
               }));
             } else if (parsed.thinking !== undefined) {
               thinking += parsed.thinking;
               setMessagesByMode((prev) => ({
                 ...prev,
-                [mode]: prev[mode].map((m) =>
-                  m.id === streamingId ? { ...m, thinking } : m
-                ),
+                [mode]: prev[mode].map((m) => m.id === streamingId ? { ...m, thinking } : m),
               }));
             } else if (parsed.content !== undefined) {
               content += parsed.content;
               setMessagesByMode((prev) => ({
                 ...prev,
-                [mode]: prev[mode].map((m) =>
-                  m.id === streamingId ? { ...m, content } : m
-                ),
+                [mode]: prev[mode].map((m) => m.id === streamingId ? { ...m, content } : m),
               }));
             } else if (parsed.error) {
               setMessagesByMode((prev) => ({
                 ...prev,
                 [mode]: prev[mode].map((m) =>
-                  m.id === streamingId
-                    ? { ...m, content: parsed.error, isStreaming: false }
-                    : m
+                  m.id === streamingId ? { ...m, content: parsed.error, isStreaming: false } : m
                 ),
               }));
             }
-          } catch {
-            // Ignore malformed SSE lines
-          }
+          } catch { /* ignore malformed SSE */ }
         }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong.";
       setMessagesByMode((prev) => ({
         ...prev,
-        [mode]: prev[mode].map((m) =>
-          m.id === streamingId
-            ? { ...m, content: message, isStreaming: false }
-            : m
-        ),
+        [mode]: prev[mode].map((m) => m.id === streamingId ? { ...m, content: message, isStreaming: false } : m),
       }));
     } finally {
       setLoading(false);
@@ -358,7 +323,7 @@ export default function AssistantPage() {
       const data = await res.json();
       setExcelResult(JSON.stringify(data.accountingData, null, 2));
     } catch {
-      setExcelResult(locale === "sw" ? "Imeshindwa kuzalisha. Jaribu tena." : "Failed to generate. Please try again.");
+      setExcelResult(sw ? "Imeshindwa kuzalisha. Jaribu tena." : "Failed to generate. Please try again.");
     } finally {
       setExcelLoading(false);
     }
@@ -381,164 +346,127 @@ export default function AssistantPage() {
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
-  const isEmptyChat = messages.length === 0;
+  // ── Input placeholder logic ───────────────────────────────────
+  function getPlaceholder(): string {
+    if (requiresAuth) return sw ? "Ingia ili kutumia hali hii…" : "Sign in to use this mode…";
+    if (missingDoc)   return sw ? "Weka ID ya hati hapa chini…" : "Paste a document ID below…";
+    return sw ? modeConfig.placeholderSw : modeConfig.placeholder;
+  }
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Top bar */}
-      <div className="shrink-0 border-b border-white/[0.06] px-6 h-14 flex items-center justify-between gap-4">
+
+      {/* ── Top bar ── */}
+      <div className="shrink-0 border-b border-white/[0.06] px-6 h-14 flex items-center">
         <h1 className="text-sm font-semibold text-neutral-200">FinBase AI</h1>
-        <div className="flex items-center gap-2">
-          {documentId && (
-            <span className="text-xs bg-teal-500/15 text-teal-400 border border-teal-500/20 px-2 py-0.5 rounded-full truncate max-w-[140px]">
-              📄 {documentId.slice(0, 8)}…
-            </span>
-          )}
-          <input
-            type="text"
-            value={documentId}
-            onChange={(e) => setDocumentId(e.target.value)}
-            placeholder={locale === "sw" ? "ID ya hati (hiari)…" : "Document ID (optional)…"}
-            className="w-44 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-teal-500/40"
-          />
-        </div>
       </div>
 
-      {/* Mode tabs */}
-      <div className="shrink-0 border-b border-white/[0.06] px-6 flex items-center gap-1 overflow-x-auto py-2">
-        {MODES.map((m) => {
-          const locked = AUTH_REQUIRED.includes(m.key) && !user;
-          return (
-            <button
-              key={m.key}
-              onClick={() => switchMode(m.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-                mode === m.key
-                  ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
-                  : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5 border border-transparent"
-              }`}
-            >
-              <span>{m.icon}</span>
-              {locale === "sw" ? m.labelSw : m.label}
-              {locked && <span className="opacity-40">🔒</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main content */}
+      {/* ── Conversation area ── */}
       <div className="flex-1 overflow-y-auto">
-        {requiresAuth ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
-            <p className="text-neutral-400 text-sm">
-              {locale === "sw" ? "Ingia ili kutumia chombo hiki" : "Sign in to use this tool"}
-            </p>
-            <Link
-              href={`/${locale}/auth/login`}
-              className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 text-white text-sm font-medium transition-colors"
-            >
-              {locale === "sw" ? "Ingia" : "Sign in"}
-            </Link>
-          </div>
-        ) : missingDoc ? (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-6">
-            <p className="text-neutral-400 text-sm">
-              {locale === "sw" ? "Weka kitambulisho cha hati hapo juu" : "Enter a document ID in the top bar"}
-            </p>
-            <p className="text-neutral-600 text-xs">
-              {locale === "sw" ? "Pata ID kutoka kwenye dashibodi" : "Find the ID on your dashboard after uploading"}
-            </p>
-          </div>
-        ) : mode === "accounting" ? (
-          <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-            <div className="space-y-1">
+
+        {/* Excel / accounting mode */}
+        {mode === "accounting" && (
+          <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+            <div>
               <h2 className="text-sm font-medium text-neutral-200">
-                {locale === "sw" ? "Muhtasari wa Uhasibu" : "Accounting Summary"}
+                {sw ? "Muhtasari wa Uhasibu" : "Accounting Summary"}
               </h2>
-              <p className="text-xs text-neutral-500">
-                {locale === "sw"
-                  ? "Zalisha muhtasari wa uhasibu unaoweza kupakuliwa kama Excel"
-                  : "Generate a structured accounting summary downloadable as Excel"}
+              <p className="text-xs text-neutral-600 mt-0.5">
+                {sw
+                  ? "Zalisha muhtasari unaoweza kupakuliwa kama Excel"
+                  : "Generate a structured summary downloadable as Excel"}
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={generateExcel}
-                disabled={excelLoading}
-                className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 disabled:bg-teal-900 disabled:text-teal-700 text-white text-sm font-medium transition-colors flex items-center gap-2"
-              >
-                {excelLoading && <Spinner size="sm" />}
-                {locale === "sw" ? "Zalisha" : "Generate"}
-              </button>
-              {excelResult && (
-                <button
-                  onClick={downloadExcel}
-                  className="px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-200 text-sm transition-colors"
-                >
-                  ⬇ {locale === "sw" ? "Pakua Excel" : "Download Excel"}
-                </button>
-              )}
-            </div>
-            {excelResult && (
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                <pre className="text-xs text-neutral-400 overflow-x-auto whitespace-pre-wrap font-mono">
-                  {excelResult}
-                </pre>
-              </div>
+            {requiresAuth ? (
+              <p className="text-sm text-neutral-500">
+                {sw ? "Ingia ili kutumia Excel — " : "Sign in to use Excel — "}
+                <Link href={`/${locale}/auth/login`} className="text-teal-400 hover:text-teal-300 transition-colors">
+                  {sw ? "Ingia" : "Sign in"}
+                </Link>
+              </p>
+            ) : missingDoc ? (
+              <p className="text-sm text-neutral-600">
+                {sw ? "Weka ID ya hati kwenye sehemu hapa chini." : "Paste a document ID in the context strip below."}
+              </p>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  <button
+                    onClick={generateExcel}
+                    disabled={excelLoading}
+                    className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    {excelLoading && <Spinner size="sm" />}
+                    {sw ? "Zalisha" : "Generate"}
+                  </button>
+                  {excelResult && (
+                    <button
+                      onClick={downloadExcel}
+                      className="px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-200 text-sm transition-colors"
+                    >
+                      {sw ? "⬇ Pakua Excel" : "⬇ Download Excel"}
+                    </button>
+                  )}
+                </div>
+                {excelResult && (
+                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                    <pre className="text-xs text-neutral-400 overflow-x-auto whitespace-pre-wrap font-mono">{excelResult}</pre>
+                  </div>
+                )}
+              </>
             )}
           </div>
-        ) : isEmptyChat && mode === "chat" ? (
-          <div className="flex flex-col items-center justify-center h-full px-6 pb-16 space-y-8">
-            <div className="text-center space-y-3">
-              <div className="h-12 w-12 rounded-2xl bg-teal-500 flex items-center justify-center mx-auto">
-                <span className="text-white font-bold text-lg">F</span>
-              </div>
-              <h2 className="text-xl font-semibold text-neutral-100">
-                {locale === "sw" ? "Habari! Mimi ni FinBase AI" : "Hi, I'm FinBase AI"}
-              </h2>
-              <p className="text-sm text-neutral-500 max-w-sm">
-                {locale === "sw"
-                  ? "Niulize chochote kuhusu fedha, hesabu, au hati za biashara."
-                  : "Ask me anything about finance, accounting, or business documents."}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-              {SUGGESTIONS[locale].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="text-left px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.14] text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="px-6 py-6 space-y-6 max-w-3xl mx-auto w-full">
-            {isEmptyChat && modeConfig.autoPrompt && (
-              <div className="text-center py-8">
-                <p className="text-neutral-500 text-sm mb-4">
-                  {locale === "sw"
+        )}
+
+        {/* Empty greeting — chat mode, no messages */}
+        {mode !== "accounting" && isEmptyChat && (
+          <div className="flex flex-col items-center justify-center h-full gap-5 px-6 pb-20">
+            {modeConfig.autoPrompt && !missingDoc && !requiresAuth ? (
+              /* Auto-prompt modes (summary) — show a single trigger button */
+              <div className="text-center space-y-4">
+                <p className="text-sm text-neutral-500">
+                  {sw
                     ? `Tayari kufanya ${modeConfig.labelSw.toLowerCase()} wa hati yako`
                     : `Ready to ${modeConfig.label.toLowerCase()} your document`}
                 </p>
                 <button
-                  onClick={() =>
-                    send(locale === "sw" ? modeConfig.autoPromptSw : modeConfig.autoPrompt)
-                  }
+                  onClick={() => send(sw ? modeConfig.autoPromptSw : modeConfig.autoPrompt)}
                   className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-white text-sm font-medium transition-colors"
                 >
-                  {locale === "sw" ? `Anza ${modeConfig.labelSw}` : `Generate ${modeConfig.label}`}
+                  {sw ? `Anza ${modeConfig.labelSw}` : `Generate ${modeConfig.label}`}
                 </button>
               </div>
+            ) : (
+              /* Default empty state */
+              <div className="text-center space-y-4">
+                <p className="text-sm text-neutral-500">
+                  {sw ? "Niulize chochote kuhusu fedha au hati za biashara." : "Ask anything about finance or business documents."}
+                </p>
+                <div className="flex items-center gap-3 justify-center flex-wrap">
+                  {SUGGESTIONS[locale].map((s, i) => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors duration-150"
+                    >
+                      {s}
+                      {i < SUGGESTIONS[locale].length - 1 && (
+                        <span className="ml-3 text-neutral-800">·</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Messages */}
+        {mode !== "accounting" && !isEmptyChat && (
+          <div className="px-6 py-6 space-y-6 max-w-3xl mx-auto w-full">
             {messages.map((msg) =>
               msg.role === "user" ? (
                 <div key={msg.id} className="flex gap-3 flex-row-reverse">
@@ -555,34 +483,110 @@ export default function AssistantPage() {
         )}
       </div>
 
-      {/* Input bar */}
-      {mode !== "accounting" && !requiresAuth && !missingDoc && (
-        <div className="shrink-0 border-t border-white/[0.06] px-6 py-4">
-          <div className="flex items-end gap-3 max-w-3xl mx-auto">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-              placeholder={locale === "sw" ? modeConfig.placeholderSw : modeConfig.placeholder}
-              disabled={loading}
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-teal-500/30 resize-none disabled:opacity-50 transition-colors"
-              style={{ maxHeight: "160px", overflowY: "auto" }}
-            />
-            <button
-              onClick={() => send()}
-              disabled={loading || !input.trim()}
-              className="h-11 w-11 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:bg-neutral-800 disabled:text-neutral-600 text-white flex items-center justify-center transition-colors shrink-0"
-            >
-              {loading ? <Spinner size="sm" /> : <SendIcon />}
-            </button>
+      {/* ── Bottom context strip + input ── */}
+      <div className="shrink-0 border-t border-white/[0.06] px-6 pt-3 pb-4">
+        <div className="max-w-3xl mx-auto w-full space-y-2">
+
+          {/* Mode pills */}
+          <div className="flex items-center gap-0.5 flex-wrap">
+            {MODES.map((m) => {
+              const locked = m.needsAuth && !user;
+              const active = mode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => switchMode(m.key)}
+                  title={locked ? (sw ? "Ingia kutumia hali hii" : "Sign in to use this mode") : undefined}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors duration-150 ${
+                    active
+                      ? "text-teal-400 bg-teal-500/10"
+                      : locked
+                      ? "text-neutral-700 hover:text-neutral-600 cursor-default"
+                      : "text-neutral-600 hover:text-neutral-300"
+                  }`}
+                >
+                  {sw ? m.labelSw : m.label}
+                </button>
+              );
+            })}
           </div>
-          <p className="text-xs text-neutral-700 text-center mt-2">
-            {locale === "sw" ? "Enter kupeleka · Shift+Enter mstari mpya" : "Enter to send · Shift+Enter for new line"}
+
+          {/* Document context strip */}
+          <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 min-h-[36px]">
+            <svg className="h-3.5 w-3.5 text-neutral-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} suppressHydrationWarning>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+
+            {documentId ? (
+              /* Loaded state — badge + clear */
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-xs font-mono text-teal-400 truncate">{documentId}</span>
+                <button
+                  onClick={() => setDocumentId("")}
+                  className="text-neutral-700 hover:text-neutral-400 transition-colors shrink-0 ml-auto"
+                  aria-label="Clear document"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} suppressHydrationWarning>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              /* Empty state — inline input */
+              <input
+                ref={docInputRef}
+                type="text"
+                value={documentId}
+                onChange={(e) => setDocumentId(e.target.value)}
+                placeholder={
+                  modeConfig.needsDoc
+                    ? (sw ? "Weka ID ya hati ili kutumia hali hii…" : "Paste document ID to use this mode…")
+                    : (sw ? "Weka ID ya hati (hiari)…" : "Paste document ID to work with a document…")
+                }
+                className="flex-1 text-xs bg-transparent text-neutral-400 placeholder-neutral-700 focus:outline-none"
+              />
+            )}
+
+            {/* Inline auth notice */}
+            {requiresAuth && (
+              <Link
+                href={`/${locale}/auth/login`}
+                className="ml-auto shrink-0 text-xs text-teal-400 hover:text-teal-300 transition-colors whitespace-nowrap"
+              >
+                {sw ? "Ingia →" : "Sign in →"}
+              </Link>
+            )}
+          </div>
+
+          {/* Input textarea + send */}
+          {mode !== "accounting" && (
+            <div className="flex items-end gap-3">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                rows={1}
+                placeholder={getPlaceholder()}
+                disabled={loading || requiresAuth || missingDoc}
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100 placeholder-neutral-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 resize-none disabled:opacity-40 transition-colors"
+                style={{ maxHeight: "160px", overflowY: "auto" }}
+              />
+              <button
+                onClick={() => send()}
+                disabled={!canSend}
+                className="h-11 w-11 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:bg-neutral-800 disabled:text-neutral-600 text-white flex items-center justify-center transition-colors shrink-0"
+              >
+                {loading ? <Spinner size="sm" /> : <SendIcon />}
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-neutral-800 text-center">
+            {sw ? "Enter kupeleka · Shift+Enter mstari mpya" : "Enter to send · Shift+Enter for new line"}
           </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
