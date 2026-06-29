@@ -1,18 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
-import { LanguageToggle } from "./LanguageToggle";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 import { useAuthStore } from "@/lib/store/auth";
 
-function HomeIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} suppressHydrationWarning>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
-    </svg>
-  );
-}
+// ── Icons ─────────────────────────────────────────────────────
+
 
 function DashboardIcon() {
   return (
@@ -38,80 +32,121 @@ function AuditIcon() {
   );
 }
 
+function LogoutIcon() {
+  return (
+    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} suppressHydrationWarning>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+    </svg>
+  );
+}
+
+function LoginIcon() {
+  return (
+    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} suppressHydrationWarning>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+    </svg>
+  );
+}
+
+// ── Compact language toggle ───────────────────────────────────
+function CompactLangToggle() {
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  function toggle() {
+    const next = locale === "en" ? "sw" : "en";
+    const segments = pathname.split("/");
+    segments[1] = next;
+    router.push(segments.join("/"));
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      title={locale === "en" ? "Switch to Swahili" : "Badili kwa Kiingereza"}
+      className="h-8 w-9 rounded-lg border border-white/10 bg-white/5 text-xs font-semibold text-neutral-500 hover:text-neutral-200 hover:bg-white/10 transition-colors"
+    >
+      {locale.toUpperCase()}
+    </button>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────
 export function Header() {
-  const t = useTranslations();
   const locale = useLocale();
   const { user, signOut } = useAuthStore();
   const pathname = usePathname();
 
   const navItems = [
-    { href: `/${locale}`, label: t("nav.home"), Icon: HomeIcon, exact: true },
-    { href: `/${locale}/dashboard`, label: t("nav.dashboard"), Icon: DashboardIcon, exact: false },
-    { href: `/${locale}/assistant`, label: t("nav.assistant"), Icon: AssistantIcon, exact: false },
-    { href: `/${locale}/auditing`, label: t("nav.auditing"), Icon: AuditIcon, exact: false },
+    { href: `/${locale}/dashboard`,  label: "Dashboard",  Icon: DashboardIcon, exact: false },
+    { href: `/${locale}/assistant`,  label: "Assistant",  Icon: AssistantIcon, exact: false },
+    { href: `/${locale}/auditing`,   label: "Auditing",   Icon: AuditIcon,     exact: false },
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-56 bg-neutral-950 border-r border-white/[0.06] flex flex-col z-50">
+    <aside className="fixed left-0 top-0 h-full w-14 bg-neutral-950 border-r border-white/[0.06] flex flex-col z-50">
+
       {/* Logo */}
-      <div className="px-4 h-14 flex items-center border-b border-white/[0.06]">
-        <Link href={`/${locale}`} className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">F</span>
+      <div className="h-14 flex items-center justify-center border-b border-white/[0.06] shrink-0">
+        <Link href={`/${locale}/dashboard`} title="FinBase">
+          <div className="h-8 w-8 rounded-lg bg-teal-500 flex items-center justify-center hover:bg-teal-400 transition-colors">
+            <span className="text-white font-bold text-sm">F</span>
           </div>
-          <span className="font-semibold text-neutral-100 text-sm tracking-tight">FinBase</span>
         </Link>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+      {/* Nav — icon only with title tooltips */}
+      <nav className="flex-1 flex flex-col items-center py-3 gap-1 overflow-y-auto">
         {navItems.map(({ href, label, Icon, exact }) => {
           const isActive = exact ? pathname === href : pathname?.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              title={label}
+              className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors duration-150 ${
                 isActive
-                  ? "bg-white/10 text-neutral-100 font-medium"
-                  : "text-neutral-500 hover:text-neutral-200 hover:bg-white/5"
+                  ? "bg-white/10 text-neutral-100"
+                  : "text-neutral-600 hover:text-neutral-200 hover:bg-white/5"
               }`}
             >
               <Icon />
-              {label}
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom */}
-      <div className="px-3 pb-4 pt-3 border-t border-white/[0.06] space-y-3">
-        <LanguageToggle />
+      {/* Bottom — lang toggle + auth */}
+      <div className="shrink-0 flex flex-col items-center gap-2 pb-4 pt-3 border-t border-white/[0.06]">
+        <CompactLangToggle />
+
         {user ? (
-          <div className="space-y-1">
-            <p className="text-xs text-neutral-600 px-1 truncate">{user.email}</p>
+          <>
+            {/* User initial */}
+            <div
+              title={user.email ?? ""}
+              className="h-8 w-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-neutral-400 select-none"
+            >
+              {user.email?.[0]?.toUpperCase() ?? "U"}
+            </div>
+            {/* Logout */}
             <button
               onClick={signOut}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-colors"
+              title="Sign out"
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-neutral-600 hover:text-red-400 hover:bg-white/5 transition-colors duration-150"
             >
-              {t("nav.logout")}
+              <LogoutIcon />
             </button>
-          </div>
+          </>
         ) : (
-          <div className="space-y-1">
-            <Link
-              href={`/${locale}/auth/login`}
-              className="flex items-center px-3 py-2 rounded-lg text-sm text-neutral-500 hover:text-neutral-200 hover:bg-white/5 transition-colors"
-            >
-              {t("nav.login")}
-            </Link>
-            <Link
-              href={`/${locale}/auth/register`}
-              className="flex items-center justify-center px-3 py-2 rounded-lg text-sm bg-teal-500 text-white hover:bg-teal-400 transition-colors font-medium"
-            >
-              {t("nav.register")}
-            </Link>
-          </div>
+          <Link
+            href={`/${locale}/auth/login`}
+            title="Sign in"
+            className="h-9 w-9 rounded-lg flex items-center justify-center text-neutral-600 hover:text-neutral-200 hover:bg-white/5 transition-colors duration-150"
+          >
+            <LoginIcon />
+          </Link>
         )}
       </div>
     </aside>

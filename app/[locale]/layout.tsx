@@ -29,7 +29,7 @@ export default async function LocaleLayout({
       <AuthProvider>
         <div className="flex min-h-screen">
           <Header />
-          <main className="flex-1 ml-56 min-h-screen">{children}</main>
+          <main className="flex-1 ml-14 min-h-screen">{children}</main>
         </div>
       </AuthProvider>
     </NextIntlClientProvider>

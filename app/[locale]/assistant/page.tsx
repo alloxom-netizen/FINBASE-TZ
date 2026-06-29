@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import { useAuthStore } from "@/lib/store/auth";
 import { Spinner } from "@/components/ui/Spinner";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 type Mode = "chat" | "summary" | "qa" | "drafts" | "negotiation" | "accounting";
 
@@ -194,6 +195,23 @@ export default function AssistantPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
+  const didAutoSend = useRef(false);
+
+  const searchParams = useSearchParams();
+
+  // Auto-load docId + auto-send question from URL params (e.g. from DocumentViewer suggested questions)
+  useEffect(() => {
+    const paramDocId = searchParams.get("docId");
+    const paramQ     = searchParams.get("q");
+    if (!paramDocId || didAutoSend.current) return;
+    didAutoSend.current = true;
+    setDocumentId(paramDocId);
+    if (paramQ) {
+      // Small delay so documentId state settles before the send call reads it
+      setTimeout(() => send(paramQ, paramDocId), 120);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const messages = messagesByMode[mode];
   const modeConfig = MODES.find((m) => m.key === mode)!;
@@ -213,9 +231,9 @@ export default function AssistantPage() {
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  async function send(text?: string) {
+  async function send(text?: string, overrideDocId?: string) {
     const userText = (text ?? input).trim();
-    if (!userText || loading || missingDoc || requiresAuth) return;
+    if (!userText || loading) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: userText };
     const updated = [...messages, userMsg];
@@ -235,7 +253,7 @@ export default function AssistantPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: updated.map((m) => ({ role: m.role, content: m.content })),
-          documentId: documentId.trim() || undefined,
+          documentId: (overrideDocId ?? documentId).trim() || undefined,
           language: locale,
           mode,
         }),
